@@ -19,6 +19,13 @@ This project is a study timer website designed for government exam preparation.
 - JavaScript
 - LocalStorage
 
+
+### 🚀 Future Improvements
+- Add multiple subject tracking
+- Add login system
+- Mobile responsive design
+- Cloud data storage
+
 ### 🎯 Purpose
 Helps track daily study time and exam preparation progress.
 
