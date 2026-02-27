@@ -1,3 +1,5 @@
+![Project Preview](preview.png)
+
 # exam-tracker-web
 ## 📚 Daily Study Timer (Govt Exam Preparation)
 
