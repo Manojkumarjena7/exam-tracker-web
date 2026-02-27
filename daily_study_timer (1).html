@@ -1,0 +1,260 @@
+<!-- FULL UPDATED HTML WITH TODAY TIME LEFT ADDED -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Study Timer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(to right, #1a1a2e, #16213e);
+      color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      position: relative;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #0072ff, #00c6ff);
+    }
+    #hourCountdown {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 22px;
+      padding: 8px 14px;
+      background: #111;
+      color: #ff0;
+      border: 3px solid #ff0000;
+      border-radius: 10px;
+      box-shadow: 0 0 10px red;
+      font-weight: bold;
+    }
+    #todayLeft {
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      font-size: 18px;
+      color: #00ffff;
+      background: #220000;
+      padding: 6px 12px;
+      border: 2px dashed #ff9900;
+      border-radius: 8px;
+      font-weight: bold;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+    #studyChart {
+      max-width: 250px;
+      margin: auto;
+    }
+    .ri-subject-box {
+      background: #222;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 0 10px #0ff;
+    }
+    .ri-subject-box h3 {
+      color: #ff0;
+      text-align: center;
+    }
+    .ri-subject-box ul {
+      list-style: none;
+      padding: 0;
+      font-size: 15px;
+    }
+    .ri-subject-box li {
+      margin: 6px 0;
+    }
+    #countdown {
+      text-align: center;
+      font-size: 26px;
+      margin: 20px auto;
+      padding: 10px;
+      border: 3px dashed #00ffff;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .pdf-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+    }
+    .date-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .date-row input {
+      padding: 6px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="hourCountdown"></div>
+  <div id="todayLeft"></div>
+
+  <p style="margin-top: 50px; font-size: 20px; font-weight: bold; color: #00ffff; text-shadow: 1px 1px 5px #f00; text-align: center;">
+    🚀 Manoj, you're a legend. Never give up. Victory is yours! 💪
+  </p>
+
+  <div class="date-row">
+    <div style="color: #0ff; font-weight: bold;">Today: <span id="todayDate"></span></div>
+    <div>
+      <label for="examDateInput">📅 Exam Date:</label>
+      <input type="date" id="examDateInput" value="2025-08-11">
+    </div>
+  </div>
+
+  <div id="countdown"></div>
+
+  <h2>⏱️ Main Stopwatch</h2>
+  <div>
+    <span id="mainTimer" style="font-size: 48px; border: 4px solid #00aaff; padding: 15px 25px; border-radius: 12px; font-weight: bold; background: rgba(0,0,0,0.6); box-shadow: 0 0 12px #00aaff;">00:00:00</span>
+    <br/><br/>
+    <button onclick="startMain()">Start</button>
+    <button onclick="pauseMain()">Pause</button>
+    <button onclick="resetMain()">Reset</button>
+  </div>
+
+  <div style="display: flex; justify-content: center; gap: 40px; margin-top: 40px; flex-wrap: wrap;">
+    <div>
+      <h3>📊 Weekly Study Progress</h3>
+      <canvas id="studyChart" width="250" height="200"></canvas>
+    </div>
+
+    <div class="ri-subject-box">
+      <h3>📘 RI Exam Subjects & Marks</h3>
+      <ul>
+        <li>🧠 GS: 40 marks</li>
+        <li>🧮 Math & Reasoning: 40 marks</li>
+        <li>📖 English: 40 marks</li>
+        <li>🗣️ Odia: 40 marks</li>
+        <li>💻 Computer: 40 marks</li>
+        <li>⏰ Time: 180 minutes</li>
+      </ul>
+    </div>
+  </div>
+
+  <button onclick="saveToPDF()" class="pdf-button">📄 Save as PDF</button>
+
+  <script>
+    function updateToday() {
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const yyyy = today.getFullYear();
+      document.getElementById("todayDate").innerText = `${dd}-${mm}-${yyyy}`;
+    }
+
+    function updateTodayTimeLeft() {
+      const now = new Date();
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      const diff = end - now;
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+      document.getElementById("todayLeft").innerText = `🕓 Today Left: ${h}h ${m}m ${s}s`;
+    }
+    setInterval(updateTodayTimeLeft, 1000);
+
+    let selectedExamDate = new Date("2025-08-11T00:00:00");
+    const examDateInput = document.getElementById("examDateInput");
+    examDateInput.addEventListener("change", () => {
+      selectedExamDate = new Date(examDateInput.value + "T00:00:00");
+    });
+
+    function updateCountdown() {
+      const now = new Date().getTime();
+      const distance = selectedExamDate.getTime() - now;
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+      document.getElementById("countdown").innerText = `${days} days, ${hours} hrs, ${minutes} min, ${seconds} sec`;
+      document.getElementById("hourCountdown").innerText = `⏳ ${days} days ${hours} hrs`;
+    }
+
+    updateToday();
+    setInterval(updateCountdown, 1000);
+
+    let timerInterval;
+    let totalSeconds = 0;
+    function startMain() {
+      if (!timerInterval) {
+        timerInterval = setInterval(() => {
+          totalSeconds++;
+          const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+          const min = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+          const sec = String(totalSeconds % 60).padStart(2, '0');
+          document.getElementById("mainTimer").innerText = `${hrs}:${min}:${sec}`;
+        }, 1000);
+      }
+    }
+    function pauseMain() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    function resetMain() {
+      pauseMain();
+      totalSeconds = 0;
+      document.getElementById("mainTimer").innerText = "00:00:00";
+    }
+
+    const ctx = document.getElementById('studyChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+          label: 'Study Hours',
+          data: [2, 3, 4, 1, 0, 5, 6],
+          backgroundColor: '#00ffaa'
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    function saveToPDF() {
+      const element = document.body;
+      html2canvas(element).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = canvas.height * pdfWidth / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save("Study_Report_Manoj.pdf");
+      });
+    }
+  </script>
+</body>
+</html>
